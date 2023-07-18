@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import pytz
-# import time
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -42,17 +41,6 @@ async def submit_google_form(user_name, start_time, end_time):
     end_hour, end_minute =end_time_str.split(":")[:2]
     end_year, end_month, end_day =end_date_str.split("-")
 
-    # start_hour = start_time.tm_hour
-    # start_minute = start_time.tm_min
-    # start_day = start_time.tm_mday
-    # start_month = start_time.tm_mon
-    # start_year = start_time.tm_year
-    # end_hour = end_time.tm_hour
-    # end_minute = end_time.tm_min
-    # end_day = end_time.tm_mday
-    # end_month = end_time.tm_mon
-    # end_year = end_time.tm_year
-
     form_data = {
         FORM_FIELD_IDS["name"]: user_name,
         FORM_FIELD_IDS["start_time_hour"]: start_hour,
@@ -72,22 +60,20 @@ async def submit_google_form(user_name, start_time, end_time):
             return response.status == 200
 
 async def on_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id in user_sessions:
+    user_name = update.effective_user.username
+    if user_name in user_sessions:
         await update.message.reply_text("You already have an active session.")
     else:
-        user_sessions[user_id] = datetime.datetime.now(sgt)
-        # user_sessions[user_id] = time.localtime()
+        user_sessions[user_name] = datetime.datetime.now(sgt)
         await update.message.reply_text("Timer started. Use /off to stop the timer.")
 
 async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id in user_sessions:
-        start_time = user_sessions[user_id]
-        del user_sessions[user_id]
+    user_name = update.effective_user.username
+    if user_name in user_sessions:
+        start_time = user_sessions[user_name]
+        del user_sessions[user_name]
         end_time = datetime.datetime.now(sgt)
-        # end_time = time.localtime()
-        user_name = USER_NAME_MAPPING.get(str(user_id), "Unknown")
+        user_name = USER_NAME_MAPPING.get(str(user_name), "Unknown")
 
         if user_name != "Unknown" and await submit_google_form(user_name, start_time, end_time):
           await update.message.reply_text("Form submitted successfully!")
