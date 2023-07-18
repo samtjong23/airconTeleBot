@@ -75,7 +75,10 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         end_time = datetime.datetime.now(sgt)
         user_name = USER_NAME_MAPPING.get(str(user_name), "Unknown")
 
-        if user_name != "Unknown" and await submit_google_form(user_name, start_time, end_time):
+        if user_name == "Unknown":
+            await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
+        
+        if await submit_google_form(user_name, start_time, end_time):
           await update.message.reply_text("Form submitted successfully!")
         else:
           await update.message.reply_text("Failed to submit the form. Please try again.")
