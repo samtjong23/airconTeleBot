@@ -1,9 +1,11 @@
 import aiohttp
 import asyncio
+import datetime
 import json
 import logging
 import os
-import time
+import pytz
+# import time
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -22,6 +24,9 @@ USER_NAME_MAPPING = json.loads(os.getenv("USER_NAME_MAPPING"))
 
 user_sessions = {}
 
+# Set the Singapore time zone
+sgt = pytz.timezone("Asia/Singapore")
+
 # Command Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Welcome to RedhillAirconBot! Send /help to see available commands.")
@@ -30,16 +35,23 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("List of commands:\n/help - Show available commands\n/on - Start timer\n/off - End timer")
 
 async def submit_google_form(user_name, start_time, end_time):
-    start_hour = start_time.tm_hour
-    start_minute = start_time.tm_min
-    start_day = start_time.tm_mday
-    start_month = start_time.tm_mon
-    start_year = start_time.tm_year
-    end_hour = end_time.tm_hour
-    end_minute = end_time.tm_min
-    end_day = end_time.tm_mday
-    end_month = end_time.tm_mon
-    end_year = end_time.tm_year
+    start_date_str, start_time_str = str(start_time).split(" ")
+    start_hour, start_minute =start_time_str.split(":")[:2]
+    start_year, start_month, start_day =start_date_str.split("-")
+    end_date_str, end_time_str = str(end_time).split(" ")
+    end_hour, end_minute =end_time_str.split(":")[:2]
+    end_year, end_month, end_day =end_date_str.split("-")
+
+    # start_hour = start_time.tm_hour
+    # start_minute = start_time.tm_min
+    # start_day = start_time.tm_mday
+    # start_month = start_time.tm_mon
+    # start_year = start_time.tm_year
+    # end_hour = end_time.tm_hour
+    # end_minute = end_time.tm_min
+    # end_day = end_time.tm_mday
+    # end_month = end_time.tm_mon
+    # end_year = end_time.tm_year
 
     form_data = {
         FORM_FIELD_IDS["name"]: user_name,
@@ -64,7 +76,8 @@ async def on_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in user_sessions:
         await update.message.reply_text("You already have an active session.")
     else:
-        user_sessions[user_id] = time.localtime()
+        user_sessions[user_id] = datetime.datetime.now(sgt)
+        # user_sessions[user_id] = time.localtime()
         await update.message.reply_text("Timer started. Use /off to stop the timer.")
 
 async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,7 +85,8 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in user_sessions:
         start_time = user_sessions[user_id]
         del user_sessions[user_id]
-        end_time = time.localtime()
+        end_time = datetime.datetime.now(sgt)
+        # end_time = time.localtime()
         user_name = USER_NAME_MAPPING.get(str(user_id), "Unknown")
 
         if user_name != "Unknown" and await submit_google_form(user_name, start_time, end_time):
