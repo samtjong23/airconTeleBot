@@ -27,10 +27,10 @@ sgt = pytz.timezone("Asia/Singapore")
 
 # Command Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome to RedhillAirconBot! \n\n If you're new, please contact @samtjong to register before you can use this bot. \n\n Otherwise, type /help to see available commands.")
+    await update.message.reply_text("Welcome to RedhillAirconBot!\n\n If you're new, please contact @samtjong to register before you can use this bot.\n\n Otherwise, type /help to see available commands.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("List of commands:\n/help - Show available commands\n/on - Start timer\n/off - End timer \n/abort - Cancel ongoing timer")
+    await update.message.reply_text("List of commands:\n\n/help - Show available commands\n/on - Start timer\n/off - End timer \n/abort - Cancel ongoing timer")
 
 async def submit_google_form(user_name, start_time, end_time):
     start_date_str, start_time_str = str(start_time).split(" ")
@@ -92,7 +92,7 @@ async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Message Handler
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("I'm sorry, I don't understand that command. Send /help to see available commands.")
+    await update.message.reply_text("I'm sorry, I don't understand that command. Type /help to see available commands.")
 
 # Start the Bot
 def main():
