@@ -27,7 +27,7 @@ sgt = pytz.timezone("Asia/Singapore")
 
 # Command Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome to RedhillAirconBot! Send /help to see available commands.")
+    await update.message.reply_text("Welcome to RedhillAirconBot! \n\n If you're new, please contact @samtjong to register before you can use this bot. \n\n Otherwise, type /help to see available commands.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("List of commands:\n/help - Show available commands\n/on - Start timer\n/off - End timer \n/abort - Cancel ongoing timer")
