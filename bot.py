@@ -80,7 +80,7 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("Failed to submit the form. Please try again.")
     else:
-        await update.message.reply_text("You don't have an active session. Use /on to start the timer.")
+        await update.message.reply_text("You don't have an active session. Use /on to start a new timer.")
 
 async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
@@ -88,7 +88,7 @@ async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del user_sessions[user_name]
         await update.message.reply_text("Your session has been cancelled. Use /on to start a new timer.")
     else:
-        await update.message.reply_text("You don't have an active session. Use /on to start the timer.")
+        await update.message.reply_text("You don't have an active session. Use /on to start a new timer.")
 
 # Message Handler
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
