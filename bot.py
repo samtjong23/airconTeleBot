@@ -60,7 +60,9 @@ async def submit_google_form(user_name, start_time, end_time):
 
 async def on_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
-    if user_name in user_sessions:
+    if USER_NAME_MAPPING.get(user_name, "Unknown") == "Unknown":
+        await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
+    elif user_name in user_sessions:
         await update.message.reply_text("You already have an active session.")
     else:
         user_sessions[user_name] = datetime.datetime.now(sgt)
@@ -72,26 +74,19 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         start_time = user_sessions[user_name]
         del user_sessions[user_name]
         end_time = datetime.datetime.now(sgt)
-        user_name = USER_NAME_MAPPING.get(str(user_name), "Unknown")
 
-        if user_name == "Unknown":
-            await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
-        
         if await submit_google_form(user_name, start_time, end_time):
-          await update.message.reply_text("Form submitted successfully!")
+            await update.message.reply_text("Form submitted successfully!")
         else:
-          await update.message.reply_text("Failed to submit the form. Please try again.")
+            await update.message.reply_text("Failed to submit the form. Please try again.")
     else:
         await update.message.reply_text("You don't have an active session. Use /on to start the timer.")
 
 async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
     if user_name in user_sessions:
-        if user_name == "Unknown":
-            await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
-        else:
-            del user_sessions[user_name]
-            await update.message.reply_text("Your session has been cancelled. Use /on to start a new timer.")
+        del user_sessions[user_name]
+        await update.message.reply_text("Your session has been cancelled. Use /on to start a new timer.")
     else:
         await update.message.reply_text("You don't have an active session. Use /on to start the timer.")
 
