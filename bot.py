@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                    level=logging.INFO)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 # Set higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Welcome to RedhillAirconBot! Send /help to see available commands.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("List of commands:\n/help - Show available commands\n/on - Start timer\n/off - End timer")
+    await update.message.reply_text("List of commands:\n/help - Show available commands\n/on - Start timer\n/off - End timer \n/abort - Cancel ongoing timer")
 
 async def submit_google_form(user_name, start_time, end_time):
     start_date_str, start_time_str = str(start_time).split(" ")
@@ -65,7 +64,7 @@ async def on_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("You already have an active session.")
     else:
         user_sessions[user_name] = datetime.datetime.now(sgt)
-        await update.message.reply_text("Timer started. Use /off to stop the timer.")
+        await update.message.reply_text("Timer started. Use /off to stop the timer or /abort to cancel the timer.")
 
 async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
@@ -85,6 +84,17 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("You don't have an active session. Use /on to start the timer.")
 
+async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_name = update.effective_user.username
+    if user_name in user_sessions:
+        if user_name == "Unknown":
+            await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
+        else:
+            del user_sessions[user_name]
+            await update.message.reply_text("Your session has been cancelled. Use /on to start a new timer.")
+    else:
+        await update.message.reply_text("You don't have an active session. Use /on to start the timer.")
+
 # Message Handler
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("I'm sorry, I don't understand that command. Send /help to see available commands.")
@@ -98,6 +108,7 @@ def main():
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("on", on_command))
     application.add_handler(CommandHandler("off", off_command))
+    application.add_handler(CommandHandler("abort", abort_command))
 
     # On non command: Return error messsage
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
