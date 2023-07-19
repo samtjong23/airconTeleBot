@@ -96,7 +96,7 @@ async def hour_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if USER_NAME_MAPPING.get(user_name, "Unknown") == "Unknown":
         await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
     elif len(context.args) != 1 or not context.args[0].replace('.','',1).isdigit():
-        # Check if too many argoments or argument is not a number (int or float)
+        # Check if too many arguments or argument is not a number (int or float)
         await update.message.reply_text("I'm sorry, I can't tell how long you've used the AC.\n\nPlease input only one number after /hour (e.g. '/hour 8' or '/hour 6.5').")
     else:
         current_time = datetime.datetime.now(sgt)
