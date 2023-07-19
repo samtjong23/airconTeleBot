@@ -93,7 +93,7 @@ async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def hour_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
-    if USER_NAME_MAPPING.get(user_name, "Unknown") == "Unknown":
+    if user_name not in USER_NAME_MAPPING:
         await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
     elif len(context.args) != 1 or not context.args[0].replace('.','',1).isdigit():
         # Check if too many arguments or argument is not a number (int or float)
