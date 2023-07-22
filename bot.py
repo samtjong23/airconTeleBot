@@ -112,6 +112,10 @@ async def hour_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("I'm sorry, I don't understand that command. Type /help to see available commands.")
 
+# Error Handler
+async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.warning(f"Update '{update}' caused error '{context.error}'")
+
 # Start the Bot
 def main():
     application = Application.builder().token(TOKEN).build()
@@ -126,6 +130,9 @@ def main():
 
     # On non command: Return error messsage
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # On error: Log warning message
+    application.add_error_handler(handle_error)
 
     # Run the bot until the user presses Ctrl-C
     asyncio.run(application.run_polling(allowed_updates=Update.ALL_TYPES))
