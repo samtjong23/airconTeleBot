@@ -103,7 +103,7 @@ async def hour_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         hours = context.args[0]
         hours_delta = datetime.timedelta(hours=float(hours))
         if await submit_google_form(user_name, current_time-hours_delta, current_time):
-            await update.message.reply_text(f"Form submitted successfully! You used the AC for {hours} hours.") 
+            await update.message.reply_text(f"Form submitted successfully! You used the AC for {hours} hours.")
         else:
             await update.message.reply_text("Failed to submit the form. Please try again.")
 
