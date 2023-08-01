@@ -1,10 +1,9 @@
-import aiohttp
-import asyncio
 import datetime
 import json
 import logging
 import os
 import pytz
+import requests
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -19,6 +18,8 @@ TOKEN = os.getenv("TOKEN")
 FORM_URL = os.getenv("FORM_URL")
 FORM_FIELD_IDS = json.loads(os.getenv("FORM_FIELD_IDS"))
 USER_NAME_MAPPING = json.loads(os.getenv("USER_NAME_MAPPING"))
+HEROKU_APP_NAME = os.getenv("HEROKU_APP_NAME")
+PORT = int(os.environ.get("PORT", 5000))
 
 user_sessions = {}
 
@@ -32,7 +33,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("List of commands:\n\n/help - Show available commands\n/on - Start timer\n/off - End timer \n/abort - Cancel ongoing timer\n/hour <h> - Record usage in hours (e.g. '/hour 6.5')")
 
-async def submit_google_form(user_name, start_time: datetime.datetime, end_time: datetime.datetime):
+def submit_google_form(user_name, start_time: datetime.datetime, end_time: datetime.datetime):
     start_date_str, start_time_str = str(start_time).split(" ")
     start_hour, start_minute =start_time_str.split(":")[:2]
     start_year, start_month, start_day =start_date_str.split("-")
@@ -55,9 +56,8 @@ async def submit_google_form(user_name, start_time: datetime.datetime, end_time:
         FORM_FIELD_IDS["end_date_day"]: end_day,
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(FORM_URL, data=form_data) as response:
-            return response.status == 200
+    response = requests.post(FORM_URL, data=form_data)
+    return response.status_code == 200
 
 async def on_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
@@ -76,7 +76,7 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del user_sessions[user_name]
         end_time = datetime.datetime.now(sgt)
 
-        if await submit_google_form(user_name, start_time, end_time):
+        if submit_google_form(user_name, start_time, end_time):
             await update.message.reply_text(f"Form submitted successfully! You used the AC from {start_time.strftime('%d/%m/%Y, %H:%M')} to {end_time.strftime('%d/%m/%Y, %H:%M')}.")
         else:
             await update.message.reply_text("Failed to submit the form. Please try again.")
@@ -102,7 +102,7 @@ async def hour_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         current_time = datetime.datetime.now(sgt)
         hours = context.args[0]
         hours_delta = datetime.timedelta(hours=float(hours))
-        if await submit_google_form(user_name, current_time-hours_delta, current_time):
+        if submit_google_form(user_name, current_time-hours_delta, current_time):
             await update.message.reply_text(f"Form submitted successfully! You used the AC for {hours} hours.")
         else:
             await update.message.reply_text("Failed to submit the form. Please try again.")
@@ -135,7 +135,7 @@ def main():
     application.add_error_handler(handle_error)
 
     # Run the bot until the user presses Ctrl-C
-    asyncio.run(application.run_polling(allowed_updates=Update.ALL_TYPES))
+    application.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN, webhook_url="https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
 
 
 if __name__ == "__main__":
