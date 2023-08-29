@@ -1,3 +1,4 @@
+import boto3
 import datetime
 import json
 import logging
@@ -14,14 +15,24 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-TOKEN = os.getenv("TOKEN")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_REGION_NAME = os.getenv("AWS_REGION_NAME")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 FORM_URL = os.getenv("FORM_URL")
 FORM_FIELD_IDS = json.loads(os.getenv("FORM_FIELD_IDS"))
-USER_NAME_MAPPING = json.loads(os.getenv("USER_NAME_MAPPING"))
 HEROKU_APP_NAME = os.getenv("HEROKU_APP_NAME")
 PORT = int(os.environ.get("PORT", 5000))
+TOKEN = os.getenv("TOKEN")
+USER_NAME_MAPPING = json.loads(os.getenv("USER_NAME_MAPPING"))
 
-user_sessions = {}
+# AWS setup
+session = boto3.Session(
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=AWS_REGION_NAME
+)
+dynamodb = session.resource("dynamodb")
+table = dynamodb.Table("airconTeleBot")
 
 # Set the Singapore time zone
 sgt = pytz.timezone("Asia/Singapore")
@@ -33,13 +44,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("List of commands:\n\n/help - Show available commands\n/on - Start timer\n/off - End timer \n/abort - Cancel ongoing timer\n/hour <h> - Record usage in hours (e.g. '/hour 6.5')")
 
+def is_item_exists(user_name):
+    response = table.get_item(
+        Key={
+            "User": user_name
+        }
+    )
+    return "Item" in response
+
 def submit_google_form(user_name, start_time: datetime.datetime, end_time: datetime.datetime):
     start_date_str, start_time_str = str(start_time).split(" ")
-    start_hour, start_minute =start_time_str.split(":")[:2]
-    start_year, start_month, start_day =start_date_str.split("-")
+    start_hour, start_minute = start_time_str.split(":")[:2]
+    start_year, start_month, start_day = start_date_str.split("-")
     end_date_str, end_time_str = str(end_time).split(" ")
-    end_hour, end_minute =end_time_str.split(":")[:2]
-    end_year, end_month, end_day =end_date_str.split("-")
+    end_hour, end_minute = end_time_str.split(":")[:2]
+    end_year, end_month, end_day = end_date_str.split("-")
 
     form_data = {
         FORM_FIELD_IDS["name"]: USER_NAME_MAPPING[user_name],
@@ -63,19 +82,31 @@ async def on_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
     if user_name not in USER_NAME_MAPPING:
         await update.message.reply_text("You are not registered yet. Contact @samtjong to register before you can use this bot.")
-    elif user_name in user_sessions:
+    elif is_item_exists(user_name):
         await update.message.reply_text("You already have an active session.")
     else:
-        user_sessions[user_name] = datetime.datetime.now(sgt)
+        table.put_item(
+            Item={
+                "User": user_name,
+                "startTime": str(datetime.datetime.now(sgt))
+            }
+        )
         await update.message.reply_text("Timer started. Use /off to stop the timer or /abort to cancel the timer.")
 
 async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
-    if user_name in user_sessions:
-        start_time = user_sessions[user_name]
-        del user_sessions[user_name]
+    if is_item_exists(user_name):
+        user_item_dict = {
+            "User": user_name
+        }
+        
+        response = table.get_item(Key=user_item_dict)
+        start_time_string = response["Item"]["startTime"]
+        start_time = datetime.datetime.strptime(start_time_string, "%Y-%m-%d %H:%M:%S.%f%z")
+        
+        table.delete_item(Key=user_item_dict)
         end_time = datetime.datetime.now(sgt)
-
+        
         if submit_google_form(user_name, start_time, end_time):
             await update.message.reply_text(f"Form submitted successfully! You used the AC from {start_time.strftime('%d/%m/%Y, %H:%M')} to {end_time.strftime('%d/%m/%Y, %H:%M')}.")
         else:
@@ -85,8 +116,12 @@ async def off_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def abort_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.effective_user.username
-    if user_name in user_sessions:
-        del user_sessions[user_name]
+    if is_item_exists(user_name):
+        table.delete_item(
+            Key={
+                "User": user_name
+            }
+        )
         await update.message.reply_text("Your session has been cancelled. Use /on to start a new timer.")
     else:
         await update.message.reply_text("You don't have an active session. Use /on to start a new timer.")
