@@ -171,6 +171,8 @@ def main():
 
     # Run the bot until the user presses Ctrl-C
     application.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN, webhook_url="https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
+    # For dev
+    # application.run_polling(allowed_updates=Update.ALL_TYPES) 
 
 
 if __name__ == "__main__":
